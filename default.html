@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<meta charset="UTF-8"> 
+<meta http-equiv="Content-Language" content="pt-br">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<html>
+<head>
+	<title>Teste Be3</title>
+	<script lang="javascript">
+		function limpaCampos()
+		{
+			document.getElementById('f_nome').value = '';
+			document.getElementById('f_snome').value = '';
+			document.getElementById('f_dtnasc').value = '';
+			document.getElementById('f_genero').selectedIndex = 0;
+			document.getElementById('f_cpf').value = '';
+			document.getElementById('f_rg').value = '';
+			document.getElementById('f_ufrg').value = '';
+			document.getElementById('f_email').value = '';
+			document.getElementById('f_celular').value = '';
+			document.getElementById('f_fixo').value = '';
+			document.getElementById('f_checkcpf').value = '';
+			//document.getElementById('f_conv').value = dados.prontuario;
+			document.getElementById('f_cconv').value = '';
+			document.getElementById('f_ccval').value = '';
+			ConsultaConv(0);
+		}
+
+		function ConsultaPront(atualizaTela)
+		{
+			var l_pront = document.getElementById('f_pront');
+			if(l_pront.value == '')
+			{
+				if(atualizaTela)
+				{
+					limpaCampos();
+				}
+				return 0;
+			}
+			else
+			{
+				//alert('ConsultaPront: l_pront=' + l_pront.value);
+				//document.getElementById('status').innerHTML = 'Consultando prontuário...';
+				//alert('Consultando ' + l_pront.value + '...');
+				$.ajax({
+					url: "consulta.asp",
+					type: "POST",
+					data: { "Comando": "ConsultaProntuario", "pront": l_pront.value },
+					success: function (dados, status)
+					{
+						//alert('ConsultaPront: dados.msg=' + dados.msg);
+						document.getElementById('status').innerHTML = 'OK: ' + dados.msg;
+						if(atualizaTela)
+						{
+							limpaCampos();
+						}
+						
+						if(dados.ret == 1)
+							{
+							//alert('ConsultaPront: dados.ret=1');
+							if(atualizaTela)
+							{
+								//document.getElementById('f_pront').value = dados.prontuario;
+								document.getElementById('f_nome').value = dados.nome;
+								document.getElementById('f_snome').value = dados.sobrenome;
+								document.getElementById('f_dtnasc').value = dados.dt_nasc;
+								document.getElementById('f_genero').selectedIndex = dados.sexo;
+								document.getElementById('f_cpf').value = dados.cpf;
+								document.getElementById('f_rg').value = dados.rg;
+								document.getElementById('f_ufrg').value = dados.ufrg;
+								document.getElementById('f_email').value = dados.email;
+								document.getElementById('f_celular').value = dados.celular;
+								document.getElementById('f_fixo').value = dados.fone_res;
+								//document.getElementById('f_conv').value = dados.prontuario;
+								document.getElementById('f_cconv').value = dados.n_carteirinha;
+								document.getElementById('f_ccval').value = dados.dt_carteirinha;
+								ConsultaConv(dados.id_convenio);
+								ConsultaCPF()
+							}
+						}
+						else
+						{
+							document.getElementById('f_pront').value = '';
+							document.getElementById('status').innerHTML = 'ConsultaProntuario: ' + dados.msg;
+						}
+
+						//document.getElementById('')
+						//alert('ConsultaPront: l_pront=' + l_pront.value);
+						if(l_pront.value == '' || l_pront.value == 0)
+						{
+							//alert('ConsultaPront: l_pront é branco ou zero');
+							return 0;
+						}
+						else
+						{
+							//alert('ConsultaPront: l_pront não é branco ou zero, mas ' + dados.ret);
+							return dados.ret;
+						}
+					},
+					error: function (dados, status, erro)
+					{
+						//alert('Erro ' + erro);
+						document.getElementById('status').innerHTML = 'ERRO ConsultaProntuario ' + erro + ' ' + dados.msg;
+						return dados.ret;
+					}
+				})
+			};
+		}
+
+		function ConsultaConv(id_conv)
+		{
+			var l_conv = document.getElementById('f_conv');
+			document.getElementById('status').innerHTML = 'Atualizando convênios...';
+			//alert('Consultando...');
+			$.ajax({
+				url: "consulta.asp",
+				type: "POST",
+				data: { "Comando": "ConsultaConvenios"},
+				success: function (dados, status)
+				{
+					document.getElementById('status').innerHTML = 'OK: ' + dados.msg;
+					var itemConv, contItemConv, retConv;
+					retConv = dados.convenios;
+					contItemConv = 0;
+					l_conv.innerHTML = '';
+					
+					if(dados.ret == 1)
+					{
+						for(contItemConv = 0; contItemConv < retConv.length; contItemConv++)
+						{
+							itemConv = document.createElement('option');
+							itemConv.value = retConv[contItemConv].id_convenio;
+							itemConv.text  = retConv[contItemConv].empresa;
+							l_conv.add(itemConv, l_conv.options[contItemConv]);
+							if(itemConv.value == id_conv)
+							{
+								l_conv.selectedIndex = contItemConv;
+							}
+						}
+					}
+					//document.getElementById('')
+					return dados.ret;
+				},
+				error: function (dados, status, erro)
+				{
+					//alert('Erro');
+					document.getElementById('status').innerHTML = 'ERRO ConsultaConvenios ' + erro + ' ' +  + dados;
+					return dados.ret;
+				}
+			});
+		}
+
+		function ConsultaCPF()
+		{
+			var l_cpf = document.getElementById('f_cpf');
+			var l_pront = document.getElementById('f_pront');
+			document.getElementById('status').innerHTML = 'Consultando CPF...';
+			//alert('Consultando...');
+			$.ajax({
+				url: "consulta.asp",
+				type: "POST",
+				data: { "Comando": "ConsultaCPF", "CPF": l_cpf.value, "Pront": l_pront.value }/*,
+				success: function (dados, status)
+				{
+					document.getElementById('status').innerHTML = 'OK: ' + dados.msg;
+					//document.getElementById('')
+					//alert('ConsultaCPF: ' + dados.msg + ' ' + dados.ret);
+					return dados.ret;
+				},
+				error: function (dados, status, erro)
+				{
+					//alert('Erro');
+					document.getElementById('status').innerHTML = 'ERRO ConsultaCPF ' + erro + ' ' +  + dados;
+					return dados.ret;
+				}*/
+			}) //;
+			.done(function (dados, status)
+				{
+					document.getElementById('status').innerHTML = 'OK: ' + dados.msg;
+					//document.getElementById('')
+					//alert('ConsultaCPF: ' + dados.msg + ' ' + dados.ret);
+					if(dados.ret == 0 || dados.ret == -1)
+					{
+						document.getElementById('f_checkcpf').value = '';
+					}
+					else
+					{
+						document.getElementById('f_checkcpf').value = dados.msg;
+					}
+					return dados.ret;
+				})
+			.fail(function (dados, status, erro)
+				{
+					//alert('Erro');
+					document.getElementById('status').innerHTML = 'ERRO ConsultaCPF ' + erro + ' ' +  + dados;
+					document.getElementById('f_checkcpf').value = dados.msg;
+					return dados.ret;
+				}
+			);
+		}
+
+		async function envia()
+		{
+			var l_fixo = document.getElementById('f_fixo');
+			var l_cel = document.getElementById('f_celular');
+			var regtel=/(\(?\d{2}\)?\s)?(\d{4,5}\-\d{4})/;
+			var testaTelefones = 0;
+			
+			if(l_fixo.value == '' && l_cel == '')
+			{
+				document.getElementById('status').innerHTML = 'Deve preencher pelo menos um dos telefones.';
+				testaTelefones++;
+			}
+
+			if((l_cel == '' || !l_cel.value.match(regtel)) && !l_fixo.value.match(regtel))
+			{
+				document.getElementById('status').innerHTML = 'Telefone Fixo inválido.';
+				testaTelefones++;
+			}
+
+			if((l_fixo == '' || !l_fixo.value.match(regtel)) && !l_cel.value.match(regtel))
+			{
+				document.getElementById('status').innerHTML = 'Telefone celular inválido.';
+				testaTelefones++;
+			}
+			
+			if(testaTelefones != 0)
+			{
+				document.getElementById('status').innerHTML = 'É necessário inserir pelo menos um número de telefone válido.';
+				return false;
+			}
+
+			document.getElementById('status').innerHTML = 'Checando CPF...';
+			var l_cpf = document.getElementById('f_cpf');
+			var l_pront = document.getElementById('f_pront');
+
+			document.getElementById('status').innerHTML = 'Verifica 1...';
+			if(l_cpf.value != '' && !l_cpf.value.match(/^\d{3}\.\d{3}\.\d{3}\-\d{2}$/))
+			{
+				document.getElementById('status').innerHTML = 'CPF inválido.';
+				return false;
+			}
+
+			document.getElementById('status').innerHTML = 'Verifica 2...';
+			var l_VerCPF = document.getElementById('f_checkcpf').value;
+
+			if(l_VerCPF != '')
+			{
+				document.getElementById('status').innerHTML = 'envia: ' + l_VerCPF;
+				return false;
+			}
+
+			document.getElementById('status').innerHTML = 'Verifica 3...';
+			document.getElementById('status').innerHTML = 'Enviando...';
+			//return false;
+
+			//alert('envia: ConsultaPront é zero?');
+			var r_ConsultaPront = ConsultaPront(false);
+			var l_f_dtnasc = document.getElementById('f_dtnasc').value.split('/');
+			l_f_dtnasc = l_f_dtnasc[2] + '-' + l_f_dtnasc[1] + '-' + l_f_dtnasc[0];
+			if(r_ConsultaPront == '0')
+			{
+				//alert('envia: ConsultaPront é zero, inserir...');
+				document.getElementById('status').innerHTML = 'Inserindo...';
+				$.ajax({
+					url: "consulta.asp",
+					type: "POST",
+					data: { "Comando": "InsereProntuario", 
+							"nome": document.getElementById('f_nome').value,
+							"sobrenome": document.getElementById('f_snome').value,
+							"dt_nasc": l_f_dtnasc,//document.getElementById('f_dtnasc').value,
+							"sexo": document.getElementById('f_genero').value,
+							"cpf": document.getElementById('f_cpf').value,
+							"rg": document.getElementById('f_rg').value,
+							"ufrg": document.getElementById('f_ufrg').value,
+							"email": document.getElementById('f_email').value,
+							"celular": document.getElementById('f_celular').value,
+							"fone_res": document.getElementById('f_fixo').value,
+							"nome_mae": document.getElementById('f_nomemae').value,
+							"id_convenio": document.getElementById('f_conv').value,
+							"n_carteirinha": document.getElementById('f_cconv').value,
+							"dt_carteirinha": document.getElementById('f_ccval').value
+					},
+					success: function (dados, status)
+					{
+						document.getElementById('status').innerHTML = 'InsereProntuario OK: ' + dados.msg;
+						//alert('Dados.Pront: ' + dados.pront);
+						if(dados.pront != 'undefined')
+						{
+							document.getElementById('f_pront').value = dados.pront;
+						}
+						//ConsultaPront(true);
+						return true;
+					},
+					error: function (dados, status, erro)
+					{
+						//alert('Erro');
+						document.getElementById('status').innerHTML = 'ERRO InsereProntuario ' + erro + ' ' +  + dados;
+						return false;
+					}
+				});
+			}
+			else
+			{
+				//alert('envia: ConsultaPront não 0, é ' + r_ConsultaPront);
+				document.getElementById('status').innerHTML = 'Atualizando...';
+				$.ajax({
+					url: "consulta.asp",
+					type: "POST",
+					data: { "Comando": "AtualizaProntuario", "pront": l_pront.value, 
+							"nome": document.getElementById('f_nome').value,
+							"sobrenome": document.getElementById('f_snome').value,
+							"dt_nasc": l_f_dtnasc,
+							"sexo": document.getElementById('f_genero').value,
+							"cpf": document.getElementById('f_cpf').value,
+							"rg": document.getElementById('f_rg').value,
+							"ufrg": document.getElementById('f_ufrg').value,
+							"email": document.getElementById('f_email').value,
+							"celular": document.getElementById('f_celular').value,
+							"fone_res": document.getElementById('f_fixo').value,
+							"nome_mae": document.getElementById('f_nomemae').value,
+							"id_convenio": document.getElementById('f_conv').value,
+							"n_carteirinha": document.getElementById('f_cconv').value,
+							"dt_carteirinha": document.getElementById('f_ccval').value
+					},
+					success: function (dados, status)
+					{
+						document.getElementById('status').innerHTML = 'OK: ' + dados.msg;
+						return true;
+					},
+					error: function (dados, status, erro)
+					{
+						//alert('Erro');
+						document.getElementById('status').innerHTML = 'ERRO AtualizaProntuario ' + erro + ' ' +  + dados;
+						return false;
+					}
+				});
+			}
+		}
+
+	</script>
+</head>
+<body onload="javascript:ConsultaConv(0);">
+<h1>Cadastro de pacientes</h1>
+<div>
+<form name='form_cadastro' id='form_cadastro' method='post' action='javascript:envia();'>
+<label for='f_pront'>Prontuario:</label><input type='text' name='f_pront' id = 'f_pront' onblur='javascript:ConsultaPront(true)' /><br />
+<label for='f_nome'>Nome:</label><input type='text' name='f_nome' id = 'f_nome' /><br />
+<label for='f_snome'>Sobrenome:</label><input type='text' name='f_snome' id = 'f_snome' /><br />
+<label for='f_dtnasc'>Data de nascimento:</label><input type='text' name='f_dtnasc' id = 'f_dtnasc' placeholder="dd/mm/aaaa" /><br />
+<!-- label for='f_genero'>Gênero:</label><input type='text' name='f_genero' id = 'f_genero' /><br / -->
+<label for='f_genero'>Gênero:</label><select name='f_genero' id = 'f_genero'>
+<option name = 'f_g_masc' id = 'f_g_masc' value = '0'>Masculino</option>
+<option name = 'f_g_femi' id = 'f_g_femi' value = '1'>Feminino</option>
+<option name = 'f_g_outr' id = 'f_g_outr' value = '2'>Outros</option>
+</select><br />
+<label for='f_cpf'>CPF:</label><input type='text' name='f_cpf' id = 'f_cpf' onblur='javascript:ConsultaCPF(f_cpf)' maxlength=14 placeholder="___.___.___-__" /><br />
+<input type='hidden' name='f_checkcpf' id = 'f_checkcpf' value = 'Verificar CPF'/>
+<label for='f_rg'>RG:</label><input type='text' name='f_rg' id = 'f_rg' /><br />
+<label for='f_ufrg'>Uf do RG:</label><input type='text' name='f_ufrg' id = 'f_ufrg' /><br />
+<label for='f_email'>E-mail:</label><input type='text' name='f_email' id = 'f_email' /><br />
+<label for='f_celular'>Celular:</label><input type='text' name='f_celular' id = 'f_celular' maxlength=15 placeholder="(__) 9____-____"/><br />
+<label for='f_fixo'>Tel. Fixo:</label><input type='text' name='f_fixo' id = 'f_fixo' maxlength=14 placeholder="(__) ____-____"/><br />
+<label for='f_nomemae'>Nome da mãe:</label><input type='text' name='f_nomemae' id = 'f_nomemae' /><br />
+<label for='f_conv'>Convênio:</label><select name='f_conv' id = 'f_conv'></select><br />
+<label for='f_cconv'>Carteirinha do convênio:</label><input type='text' name='f_cconv' id = 'f_cconv' /><br />
+<label for='f_ccval'>Validade (mês/ano):</label><input type='text' name='f_ccval' id = 'f_ccval' placeholder="mm/aaaa"  /><br />
+<input type="submit" />
+</form>
+</div>
+<div name='status' id='status'></div>
+</body>
+</html>
